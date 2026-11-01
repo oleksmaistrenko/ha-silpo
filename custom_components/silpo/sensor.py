@@ -16,7 +16,7 @@ from .const import ACTIONABLE, DOMAIN
 REGULAR = ACTIONABLE + ("stocked", "long_cycle", "irregular")
 from .coordinator import SilpoCoordinator
 
-PRODUCT_KEYS = ("lager_id", "name", "unit", "status", "model", "buys", "gap", "days_since", "due_in", "amount_per_buy", "base", "rate_per_week", "last", "last_price")
+PRODUCT_KEYS = ("lager_id", "name", "unit", "status", "model", "buys", "gap", "days_since", "due_in", "amount_per_buy", "base", "qty_per_buy", "rate_per_week", "last", "last_price")
 
 
 def _slim(p: dict) -> dict:

@@ -24,7 +24,7 @@ views:
               | | Product | Every | Last | Per buy |
               |:-:|:--|--:|--:|--:|
               {%- for p in rows %}
-              | {{ '🔴' if p.status == 'overdue' else '🟠' if p.status == 'due' else '🟡' }} | **{{ p.name }}** | {{ p.gap | round(0) | int }}d | {{ p.days_since }}d | {{ (p.amount_per_buy ~ p.base) if p.amount_per_buy else (p.qty_per_buy | int ~ '×') }} |
+              | {{ '🔴' if p.status == 'overdue' else '🟠' if p.status == 'due' else '🟡' }} | **{{ p.name }}** | {{ p.gap | round(0) | int }}d | {{ p.days_since }}d | {{ (p.amount_per_buy ~ p.base) if p.amount_per_buy else ((p.qty_per_buy | default(1)) | int ~ '×') }} |
               {%- endfor %}
               {%- endif %}
           - type: markdown

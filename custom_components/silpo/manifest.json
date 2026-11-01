@@ -1,0 +1,11 @@
+{
+  "domain": "silpo",
+  "name": "Silpo purchases",
+  "version": "0.1.0",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/oleksmaistrenko/ha-silpo",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": []
+}

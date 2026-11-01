@@ -1,0 +1,14 @@
+DOMAIN = "silpo"
+MCP_URL = "https://mcp.silpo.ua/mcp"
+OAUTH_METADATA_URL = "https://mcp.silpo.ua/.well-known/oauth-authorization-server"
+STORAGE_KEY = f"{DOMAIN}.receipts"
+STORAGE_VERSION = 1
+CONF_CLIENT_ID = "client_id"
+CONF_BRANCH_IDS = "branch_ids"
+CONF_LOOKBACK_DAYS = "lookback_days"          # incremental window per refresh
+DEFAULT_LOOKBACK_DAYS = 21
+BACKFILL_DAYS = 370                           # API keeps ~12 months
+UPDATE_INTERVAL_HOURS = 6
+PROMO_INTERVAL_HOURS = 24
+EVENT_PROMO_MATCH = f"{DOMAIN}_promo_match"
+ACTIONABLE = ("overdue", "due", "soon")

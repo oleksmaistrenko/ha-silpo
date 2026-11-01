@@ -1,0 +1,191 @@
+# Silpo dashboard — Settings → Dashboards → Add dashboard → start empty → ⋮ → Raw configuration editor → paste
+title: Silpo
+views:
+  # ───────────────────────── Shopping ─────────────────────────
+  - title: Shopping
+    path: shopping
+    icon: mdi:cart
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Needed soon
+            icon: mdi:cart-arrow-down
+            badges:
+              - type: entity
+                entity: sensor.silpo_needed_soon
+          - type: markdown
+            content: |
+              {%- set f = states.sensor.silpo_needed_soon.attributes -%}
+              {%- set rows = (f.overdue or []) + (f.due or []) + (f.soon or []) -%}
+              {%- if not rows %}Nothing due — nice.{% else %}
+              | | Product | Every | Last | Per buy |
+              |:-:|:--|--:|--:|--:|
+              {%- for p in rows %}
+              | {{ '🔴' if p.status == 'overdue' else '🟠' if p.status == 'due' else '🟡' }} | **{{ p.name }}** | {{ p.gap | round(0) | int }}d | {{ p.days_since }}d | {{ (p.amount_per_buy ~ p.base) if p.amount_per_buy else (p.qty_per_buy | int ~ '×') }} |
+              {%- endfor %}
+              {%- endif %}
+          - type: markdown
+            title: Stocked
+            content: |
+              | Product | Due in | Every |
+              |:--|--:|--:|
+              {%- for p in (state_attr('sensor.silpo_needed_soon','stocked') or [])[:15] %}
+              | {{ p.name }} | {{ p.due_in }}d | {{ p.gap | round(0) | int }}d |
+              {%- endfor %}
+      - type: grid
+        cards:
+          - type: heading
+            heading: On promo now
+            icon: mdi:tag-heart
+            badges:
+              - type: entity
+                entity: sensor.silpo_promo_matches
+          - type: markdown
+            content: |
+              {%- set m = state_attr('sensor.silpo_promo_matches','regular') or [] -%}
+              {%- if not m %}No promos on your regulars right now.{% else %}
+              | Product | Deal | Status |
+              |:--|--:|:--|
+              {%- for x in m[:25] %}
+              | **{{ x.name }}** | {% if x.discount_pct %}**−{{ x.discount_pct }}%** {{ x.price }} ₴ ~~{{ x.old_price }}~~{% elif x.special_prices %}{{ x.special_prices[0].count | int }} for {{ x.special_prices[0].price }} ₴{% else %}{{ x.price }} ₴{% endif %} | {{ x.status }}{% if x.due_in is not none %} ({{ '%+d' % x.due_in }}d){% endif %} |
+              {%- endfor %}
+              {%- endif %}
+          - type: markdown
+            title: Copy to the shopping list
+            content: |
+              {{ (state_attr('sensor.silpo_needed_soon','shopping_list') or []) | join(', ') }}
+
+  # ───────────────────────── Habits ─────────────────────────
+  - title: Habits
+    path: habits
+    icon: mdi:chart-timeline-variant
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: This week
+          - type: tile
+            entity: sensor.silpo_this_week_spend
+            name: Spend
+          - type: tile
+            entity: sensor.silpo_this_week_trips
+            name: Trips
+          - type: tile
+            entity: sensor.silpo_last_week_spend
+            name: Last week
+          - type: tile
+            entity: sensor.silpo_average_weekly_spend_4w
+            name: 4-week avg
+          - type: markdown
+            title: Last 12 weeks
+            content: |
+              {%- set w = state_attr('sensor.silpo_habits','weekly') or [] -%}
+              {%- set mx = (w | map(attribute='spend') | max) if w else 1 -%}
+              | Week | Spend | | Trips |
+              |:--|--:|:--|--:|
+              {%- for r in w %}
+              | {{ r.week[5:] }} | {{ r.spend | round(0) | int }} ₴ | {{ '█' * ((r.spend / mx * 20) | round(0) | int) }} | {{ r.trips }} |
+              {%- endfor %}
+          - type: markdown
+            title: Monthly
+            content: |
+              {%- set m = state_attr('sensor.silpo_habits','monthly') or {} -%}
+              {%- set mx = (m.values() | list | max) if m else 1 -%}
+              | Month | Spend | |
+              |:--|--:|:--|
+              {%- for k, v in m.items() %}
+              | {{ k }} | {{ v }} ₴ | {{ '█' * ((v / mx * 20) | round(0) | int) }} |
+              {%- endfor %}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Rhythm
+          - type: markdown
+            content: |
+              {%- set h = states.sensor.silpo_habits.attributes -%}
+              **{{ h.trips_per_week }}** trips/week · basket **{{ h.avg_basket }} ₴** · **{{ h.avg_items_per_trip }}** items/trip
+
+              4-week average **{{ h.avg_week_spend_4w }} ₴**, previous 4 weeks {{ h.avg_week_spend_prev_4w }} ₴ → **{{ '%+d' % h.trend_4w_pct }}%**
+
+              Discounts **{{ h.discount_pct }}%** of gross · bonuses earned **{{ h.bonus_total }}**
+
+              | Day | Trips | |
+              |:--|--:|:--|
+              {%- set mx = h.weekday.values() | list | max %}
+              {%- for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+              | {{ d }} | {{ h.weekday[d] or 0 }} | {{ '█' * (((h.weekday[d] or 0) / mx * 20) | round(0) | int) }} |
+              {%- endfor %}
+
+              | Hour | Trips | |
+              |:--|--:|:--|
+              {%- set hm = h.hours.values() | list | max %}
+              {%- for k, v in h.hours.items() if v >= 3 %}
+              | {{ k }}:00 | {{ v }} | {{ '█' * ((v / hm * 20) | round(0) | int) }} |
+              {%- endfor %}
+
+              **Stores:** {% for k, v in h.stores.items() %}{{ k }} ({{ v }}){{ ' · ' if not loop.last }}{% endfor %}
+          - type: markdown
+            title: Lapsed — used to be regular
+            content: |
+              | Product | Was every | Last |
+              |:--|--:|--:|
+              {%- for p in (state_attr('sensor.silpo_needed_soon','lapsed') or [])[:20] %}
+              | {{ p.name }} | {{ p.gap | round(0) | int }}d | {{ p.days_since }}d |
+              {%- endfor %}
+          - type: entities
+            title: Status
+            entities:
+              - binary_sensor.silpo_connected
+              - sensor.silpo_stored_receipts
+              - sensor.silpo_discount_share
+              - sensor.silpo_bonuses_earned
+
+  # ───────────────────────── Offers ─────────────────────────
+  - title: Offers
+    path: offers
+    icon: mdi:ticket-percent
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Personal offers — activate in the Silpo app
+          - type: markdown
+            content: |
+              | | Reward | For | Until |
+              |:-:|:--|:--|--:|
+              {%- for p in state_attr('sensor.silpo_promo_matches','personal_promos') or [] %}
+              | {{ '✅' if p.selected else '⬜' }} | **{{ p.rewardText }}** | {{ p.description }} | {{ (p.endDate or '')[:10] }} |
+              {%- endfor %}
+          - type: markdown
+            title: Coupons
+            content: |
+              | | Reward | For | Until |
+              |:-:|:--|:--|--:|
+              {%- for c in state_attr('sensor.silpo_promo_matches','coupons') or [] %}
+              | {{ '✅' if c.active else '⬜' }} | **{{ c.rewardText }}** | {{ c.description }} | {{ (c.endDate or '')[:10] }} |
+              {%- endfor %}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Everything on promo you've ever bought
+          - type: markdown
+            content: |
+              | Product | Deal | Bought |
+              |:--|--:|--:|
+              {%- for x in (state_attr('sensor.silpo_promo_matches','matches') or [])[:60] %}
+              | {{ x.name }} | {% if x.discount_pct %}−{{ x.discount_pct }}% {{ x.price }} ₴{% elif x.special_prices %}{{ x.special_prices[0].count | int }} for {{ x.special_prices[0].price }} ₴{% else %}{{ x.price }} ₴{% endif %} | {{ x.buys }}× |
+              {%- endfor %}
+          - type: markdown
+            title: Store promotions
+            content: |
+              {%- for s in state_attr('sensor.silpo_promo_matches','promotions') or [] %}
+              **{{ s.branch }}**: {% for p in s.promotions %}{{ p.title }} ({{ p.count | int }}){{ ', ' if not loop.last }}{% endfor %}
+
+              {% endfor %}

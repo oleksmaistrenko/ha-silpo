@@ -92,7 +92,7 @@ def analyze_products(receipts: list[dict], asof: date) -> list[dict[str, Any]]:
                 gap = None
             if gap:
                 row["due_in"] = round(gap - since)
-                if since > max(3 * gap, 30):
+                if since > 2 * gap and since > 21:
                     row["status"] = "lapsed"
                 elif gap > LONG_CYCLE_DAYS:
                     row["status"] = "long_cycle"

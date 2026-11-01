@@ -12,6 +12,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import ACTIONABLE, DOMAIN
+
+REGULAR = ACTIONABLE + ("stocked", "long_cycle", "irregular")
 from .coordinator import SilpoCoordinator
 
 PRODUCT_KEYS = ("lager_id", "name", "unit", "status", "model", "buys", "gap", "days_since", "due_in", "amount_per_buy", "base", "rate_per_week", "last", "last_price")
@@ -47,8 +49,9 @@ DESCRIPTIONS: tuple[SilpoSensorDescription, ...] = (
         attrs=lambda d: d["habits"] | {"sync": d.get("sync")}),
     SilpoSensorDescription(
         key="promo_matches", translation_key="promo_matches", icon="mdi:tag-heart",
-        value=lambda d: len(d["promo"]["matches"]),
-        attrs=lambda d: d["promo"]),
+        value=lambda d: sum(1 for m in d["promo"]["matches"] if m["status"] in REGULAR),
+        attrs=lambda d: d["promo"] | {"regular": [m for m in d["promo"]["matches"] if m["status"] in REGULAR],
+                                      "matches": d["promo"]["matches"][:80]}),
     SilpoSensorDescription(
         key="week_spend", translation_key="week_spend", native_unit_of_measurement="UAH", state_class=SensorStateClass.TOTAL,
         device_class=SensorDeviceClass.MONETARY, icon="mdi:cash",
